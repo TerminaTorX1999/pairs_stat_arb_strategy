@@ -1,0 +1,74 @@
+"""
+Statistical Arbitrage Pairs Trading Strategy
+Author: Aditya Das
+Description:
+Identifies cointegrated stock pairs, calculates the spread, and generates buy/sell signals based on spread deviations for mean reversion.
+"""
+
+import numpy as np
+import pandas as pd
+import yfinance as yf
+from statsmodels.tsa.stattools import coint
+import matplotlib.pyplot as plt
+
+# ----------------------------
+# 1. Download Price Data for Two Stocks
+# ----------------------------
+tickers = ['MSFT', 'AAPL']
+data = yf.download(tickers, start='2015-01-01')['Adj Close'].dropna()
+
+# ----------------------------
+# 2. Test for Cointegration
+# ----------------------------
+score, pvalue, _ = coint(data['MSFT'], data['AAPL'])
+print(f"Cointegration test p-value: {pvalue:.4f}")
+
+if pvalue < 0.05:
+    print(f"Pair {tickers} is cointegrated.")
+else:
+    print(f"Pair {tickers} is NOT cointegrated. Strategy may not be reliable.")
+
+# ----------------------------
+# 3. Calculate Spread and Z-score
+# ----------------------------
+# Estimate hedge ratio using linear regression
+hedge_ratio = np.polyfit(data['AAPL'], data['MSFT'], 1)[0]
+spread = data['MSFT'] - hedge_ratio * data['AAPL']
+spread_mean = spread.mean()
+spread_std = spread.std()
+z_score = (spread - spread_mean) / spread_std
+
+# ----------------------------
+# 4. Generate Trading Signals
+# ----------------------------
+entry_threshold = 1.5
+exit_threshold = 0
+
+data['z_score'] = z_score
+data['longs'] = (z_score < -entry_threshold).astype(int)
+data['shorts'] = (z_score > entry_threshold).astype(int)
+data['exits'] = (abs(z_score) < exit_threshold).astype(int)
+
+# ----------------------------
+# 5. Plot Spread and Z-score with Entry/Exit Points
+# ----------------------------
+plt.figure(figsize=(14,6))
+
+plt.subplot(2,1,1)
+plt.plot(spread, label='Spread')
+plt.axhline(spread_mean, color='black')
+plt.axhline(spread_mean + entry_threshold * spread_std, color='red', linestyle='--')
+plt.axhline(spread_mean - entry_threshold * spread_std, color='green', linestyle='--')
+plt.title('Pairs Trading Spread')
+plt.legend()
+
+plt.subplot(2,1,2)
+plt.plot(z_score, label='Z-Score')
+plt.axhline(entry_threshold, color='red', linestyle='--')
+plt.axhline(-entry_threshold, color='green', linestyle='--')
+plt.axhline(exit_threshold, color='black', linestyle='-')
+plt.title('Z-Score with Entry/Exit Thresholds')
+plt.legend()
+
+plt.tight_layout()
+plt.show()
