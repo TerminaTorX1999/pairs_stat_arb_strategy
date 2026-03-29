@@ -1,2 +1,1 @@
-#Run every 5 minutes using cron
-*/5 * * * * /bin/bash /path/to/run_monitor.sh
+Python-based monitoring system to validate market data feeds by detecting missing values, stale ticks, and abnormal price movements. Integrated simple logging and cron-based scheduling to simulate continuous monitoring in a Linux environment.
