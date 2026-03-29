@@ -1,2 +1,2 @@
-# pairs_stat_arb_strategy
-Implements a pairs trading strategy by identifying cointegrated stock pairs and generating mean-reversion signals based on the spread’s z-score deviations.
+# Run every 5 minutes using cron
+*/5 * * * * /bin/bash /path/to/run_monitor.sh
